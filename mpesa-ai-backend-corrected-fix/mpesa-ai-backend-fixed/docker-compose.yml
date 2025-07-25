@@ -1,0 +1,84 @@
+version: '3.8'
+
+services:
+  # AI Agent API Service
+  ai-agent:
+    build:
+      context: .
+      dockerfile: Dockerfile.agent
+    container_name: mpesa-ai-agent
+    expose:
+      - "3343"
+    environment:
+      # Core application settings
+      - PYTHONPATH=/app
+      - PORT=3343
+      
+      # Google AI Configuration
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-0}
+      
+      # Database configuration
+      - DATABASE_PATH=/app/data/mpesa_sessions.db
+      - DATABASE_URL=sqlite:///./data/mpesa_sessions.db
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3343/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Webhook Server Service  
+  webhook-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.webhook
+    container_name: mpesa-webhook-server
+    expose:
+      - "3344"
+    environment:
+      # Core application settings
+      - PYTHONPATH=/app
+      - PORT=3344
+      
+      # M-Pesa Configuration
+      - MPESA_ENVIRONMENT=${MPESA_ENVIRONMENT:-sandbox}
+      - MPESA_CONSUMER_KEY=${MPESA_CONSUMER_KEY}
+      - MPESA_CONSUMER_SECRET=${MPESA_CONSUMER_SECRET}
+      - MPESA_BUSINESS_SHORT_CODE=${MPESA_BUSINESS_SHORT_CODE:-174379}
+      - MPESA_PASSKEY=${MPESA_PASSKEY}
+      - MPESA_CALLBACK_URL=${MPESA_CALLBACK_URL}
+      
+      # Twilio Configuration
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TWILIO_WHATSAPP_NUMBER=${TWILIO_WHATSAPP_NUMBER}
+      
+      # Google AI Configuration (for webhook server to communicate with AI)
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - GOOGLE_GENAI_USE_VERTEXAI=${GOOGLE_GENAI_USE_VERTEXAI:-0}
+      
+      # Application URLs
+      - WHATSAPP_WEBHOOK_URL=${WHATSAPP_WEBHOOK_URL}
+      - AI_AGENT_URL=${AI_AGENT_URL:-http://ai-agent:3343}
+      
+      # Database configuration
+      - DATABASE_PATH=/app/data/mpesa_sessions.db
+      - DATABASE_URL=sqlite:///./data/mpesa_sessions.db
+    volumes:
+      - app_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3344/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    depends_on:
+      - ai-agent
+
+volumes:
+  app_data:

@@ -1,0 +1,28 @@
+# Ngrok configuration for M-Pesa callback URL exposure
+# This file is used by the ngrok container to expose the callback server
+
+version: "2"
+authtoken: 2eNbwru0NthdEQdDI9ME1I2TFuZ_2dTapBiVBY7UvnFdS9gq1
+
+tunnels:
+  mpesa-callback:
+    addr: mpesa-backend:8001
+    proto: http
+    schemes: [https]
+    hostname: # Optional: specify a custom domain if you have ngrok pro
+    
+  adk-agent:
+    addr: mpesa-backend:8000
+    proto: http
+    schemes: [https]
+    hostname: # Optional: specify a custom domain for ADK agent
+
+# Optional: Configure ngrok regions and other settings
+region: us  # Change to your preferred region (us, eu, ap, au, sa, jp, in)
+
+# Web interface configuration
+web_addr: 0.0.0.0:4040
+
+# Log configuration
+log_level: info
+log_format: logfmt
